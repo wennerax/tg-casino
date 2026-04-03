@@ -4,7 +4,7 @@ const balance = require('./balance');
 const top = require('./top');
 const processGame = require('./processing');
 
-if (!TOKEN || TOKEN === '7990630864:AAGxs5qC9LJknywtRL9XD0CSk2x5R3U_GDw') {
+if (!TOKEN || TOKEN === '') {
   console.error('Error: Telegram token is not set. Put it in config.js or set TELEGRAM_BOT_TOKEN env var.');
   process.exit(1);
 }
