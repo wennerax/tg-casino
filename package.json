@@ -1,0 +1,15 @@
+{
+  "name": "tg-casino",
+  "version": "1.0.0",
+  "description": "Telegram casino bot: roulette, betting, slots, transfers, top leaderboard.",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "node-telegram-bot-api": "^0.61.0"
+  }
+}
