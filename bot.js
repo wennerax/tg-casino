@@ -127,7 +127,6 @@ bot.onText(/\/pay\s+(\S+)\s+(\d+)/, (msg, match) => {
 bot.onText(/\/help/, (msg) => sendHelp(msg.chat.id));
 
 bot.on('message', (msg) => {
-  // убедиться, что пользователь зарегистрирован при каждом взаимодействии, включая группы
   if (msg.from) {
     balance.ensureUser(msg.from, msg.chat.id);
   }
