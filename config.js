@@ -1,10 +1,10 @@
-const path = require('path');
-const { BOT_TOKEN } = require('./token');
+const путь = require('path');
+const { ТОКЕН_БОТА } = require('./token');
 
 module.exports = {
-  TOKEN: BOT_TOKEN,
-  MIN_BET: 100,
-  MAX_BET: 999999,
-  START_BALANCE: 1000,
-  USER_DATA_FILE: path.resolve(__dirname, 'data', 'users.json')
+  ТОКЕН: ТОКЕН_БОТА,
+  МИНИМАЛЬНАЯ_СТАВКА: 100,
+  МАКСИМАЛЬНАЯ_СТАВКА: 999999,
+  НАЧАЛЬНЫЙ_БАЛАНС: 1000,
+  ФАЙЛ_ДАННЫХ_ПОЛЬЗОВАТЕЛЯ: путь.resolve(__dirname, 'data', 'users.json')
 };
