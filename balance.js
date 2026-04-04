@@ -2,16 +2,13 @@ const fs = require('fs');
 const path = require('path');
 const { START_BALANCE, USER_DATA_FILE } = require('./config');
 
-// Изначальное состояние данных
 let state = { пользователи: {} };
 
-// Функция для создания папки данных, если она не существует
 function обеспечитьПапкуДанных() {
   const папка = path.dirname(USER_DATA_FILE);
   if (!fs.existsSync(папка)) fs.mkdirSync(папка, { recursive: true });
 }
 
-// Функция для загрузки состояния из файла
 function загрузитьСостояние() {
   обеспечитьПапкуДанных();
   if (!fs.existsSync(USER_DATA_FILE)) {
@@ -29,18 +26,15 @@ function загрузитьСостояние() {
   }
 }
 
-// Функция для сохранения состояния в файл
 function сохранитьСостояние() {
   обеспечитьПапкуДанных();
   fs.writeFileSync(USER_DATA_FILE, JSON.stringify(state, null, 2), 'utf-8');
 }
 
-// Вспомогательная функция для получения ключа пользователя по ID
 function получитьКлючПользователя(userId) {
   return String(userId);
 }
 
-// Обеспечение пользователя в базе данных
 function обеспечитьПользователя(user, chatId) {
   const id = получитьКлючПользователя(user.id);
   if (!state.пользователи[id]) {
@@ -66,14 +60,12 @@ function обеспечитьПользователя(user, chatId) {
   return пользователь;
 }
 
-// Получить баланс пользователя по ID
 function получитьБаланс(userId) {
   const id = получитьКлючПользователя(userId);
   if (!state.пользователи[id]) return 0;
   return state.пользователи[id].баланс;
 }
 
-// Установить баланс пользователя
 function установитьБаланс(userId, сумма) {
   const id = получитьКлючПользователя(userId);
   if (!state.пользователи[id]) return false;
@@ -82,7 +74,6 @@ function установитьБаланс(userId, сумма) {
   return true;
 }
 
-// Изменить баланс пользователя
 function изменитьБаланс(userId, дельта) {
   const id = получитьКлючПользователя(userId);
   if (!state.пользователи[id]) return null;
@@ -91,7 +82,6 @@ function изменитьБаланс(userId, дельта) {
   return state.пользователи[id].баланс;
 }
 
-// Перевод средств между пользователями
 function перевод(fromUserId, toUserId, сумма) {
   сумма = Math.floor(сумма);
   if (сумма <= 0) throw new Error('Сумма должна быть положительной');
@@ -105,12 +95,10 @@ function перевод(fromUserId, toUserId, сумма) {
   return { от: from.баланс, к: to.баланс };
 }
 
-// Получение всех пользователей
 function получитьВсехПользователей() {
   return Object.values(state.пользователи);
 }
 
-// Загружаем состояние при инициализации
 загрузитьСостояние();
 
 module.exports = {
