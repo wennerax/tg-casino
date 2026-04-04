@@ -1,28 +1,29 @@
-const { getAllUsers } = require('./balance');
+const { получитьВсехПользователей } = require('./balance');
 
-function formatUser(u) {
-  const name = u.username ? `@${u.username}` : `${u.first_name || 'User'} ${u.last_name || ''}`.trim();
-  return `${name} — ${u.balance.toLocaleString()} coins`;
+function форматироватьПользователя(u) {
+  const имя = u.username ? `@${u.username}` : `${u.first_name || 'Пользователь'} ${u.last_name || ''}`.trim();
+  return `${имя} — ${u.balance.toLocaleString()} монет`;
 }
 
-function getTopAll(limit = 10) {
-  return getAllUsers()
+function получитьТОПВСех(limit = 10) {
+  return получитьВсехПользователей()
     .slice()
     .sort((a, b) => b.balance - a.balance)
     .slice(0, limit)
-    .map(formatUser);
+    .map(форматироватьПользователя);
 }
 
-function getTopGroup(chatId, limit = 10) {
-  const users = getAllUsers().filter(u => u.groups && u.groups.includes(chatId));
-  return users
+
+function получитьТОПГруппы(chatId, limit = 10) {
+  const пользователи = получитьВсехПользователей().filter(u => u.groups && u.groups.includes(chatId));
+  return пользователи
     .slice()
     .sort((a, b) => b.balance - a.balance)
     .slice(0, limit)
-    .map(formatUser);
+    .map(форматироватьПользователя);
 }
 
 module.exports = {
-  getTopAll,
-  getTopGroup
+  получитьТОПВСех,
+  получитьТОПГруппы
 };
