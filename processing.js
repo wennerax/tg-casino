@@ -1,111 +1,114 @@
-const { изменитьБаланс, получитьБаланс, обеспечитьПользователя } = require('./balance');
+const { changeBalance, getBalance, ensureUser } = require('./balance');
 const { MIN_BET, MAX_BET } = require('./config');
 
-function проверитьСтавку(userId, сумма) {
-  сумма = Number(сумма);
-  if (!Number.isFinite(сумма) || сумма < MIN_BET || сумма > MAX_BET) {
-    throw new Error(`Размер ставки должен быть между ${MIN_BET} и ${MAX_BET}`);
+function validateBet(userId, amount) {
+  amount = Number(amount);
+  if (!Number.isFinite(amount) || amount < MIN_BET || amount > MAX_BET) {
+    throw new Error(`Сумма ставки должна быть от ${MIN_BET} до ${MAX_BET}`);
   }
-  const баланс = получитьБаланс(userId);
-  if (баланс < сумма) throw new Error('Недостаточно средств на балансе.');
-  return Math.floor(сумма);
+  const balance = getBalance(userId);
+  if (balance < amount) throw new Error('Недостаточно средств.');
+  return Math.floor(amount);
 }
 
-function рулетка(userId, сумма, выбор) {
-  сумма = проверитьСтавку(userId, сумма);
-  const вращение = Math.floor(Math.random() * 37); // 0..36
-  const красныеЧисла = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
-  const цвет = вращение === 0 ? 'зеленый' : красныеЧисла.has(вращение) ? 'красный' : 'черный';
+function roulette(userId, amount, choice) {
+  amount = validateBet(userId, amount);
+  const spin = Math.floor(Math.random() * 37); // 0..36
+  const redNumbers = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+  const color = spin === 0 ? 'зеленый' : redNumbers.has(spin) ? 'красный' : 'черный';
 
-  let прибыль = -сумма;
-  let сообщениеРезультата = `🎰 Рулетка: число ${вращение} (${цвет}).\n`;
-
-  const выборК = выбор.toLowerCase();
-  if (выборК === 'зеленый' && вращение === 0) {
-    прибыль = сумма * 35;
-  } else if ((выборК === 'красный' || выборК === 'черный') && цвет === выборК) {
-    прибыль = сумма;
-  } else if (выборК === 'нечет' && вращение !== 0 && вращение % 2 === 1) {
-    прибыль = сумма;
-  } else if (выборК === 'чет' && вращение !== 0 && вращение % 2 === 0) {
-    прибыль = сумма;
+  const c = choice.toLowerCase();
+  const validChoices = ['зеленый', 'красный', 'черный', 'нечет', 'чет'];
+  if (!validChoices.includes(c)) {
+    throw new Error('Недопустимый выбор. Используйте: зеленый, красный, черный, нечет, чет.');
   }
 
-  изменитьБаланс(userId, прибыль);
-  const баланс = получитьБаланс(userId);
+  let profit = -amount;
+  let resultMessage = `🎰 Результат рулетки: ${spin} (${color}).\n`;
 
-  сообщениеРезультата += прибыль >= 0
-    ? `✅ Вы выиграли ${прибыль} монет!\n` 
-    : `❌ Вы проиграли ${сумма} монет.\n`;
-  сообщениеРезультата += `💰 Текущий баланс: ${баланс} монет.`;
+  if (c === 'зеленый' && spin === 0) {
+    profit = amount * 35;
+  } else if ((c === 'красный' || c === 'черный') && color === c) {
+    profit = amount;
+  } else if (c === 'нечет' && spin !== 0 && spin % 2 === 1) {
+    profit = amount;
+  } else if (c === 'чет' && spin !== 0 && spin % 2 === 0) {
+    profit = amount;
+  }
 
-  return сообщениеРезультата;
+  changeBalance(userId, profit);
+  const balance = getBalance(userId);
+
+  resultMessage += profit >= 0
+    ? `✅ Вы выиграли ${profit} монет!\n` 
+    : `❌ Вы проиграли ${amount} монет.\n`;
+  resultMessage += `💰 Новый баланс: ${balance} монет.`;
+
+  return resultMessage;
 }
 
-function сделатьСтавку(userId, сумма, типСтавки) {
-  сумма = проверитьСтавку(userId, сумма);
-  const вращение = Math.floor(Math.random() * 100) + 1;
-  let выигрыш = false;
+function bet(userId, amount, betType) {
+  amount = validateBet(userId, amount);
+  const spin = Math.floor(Math.random() * 100) + 1;
+  let win = false;
 
-  switch (типСтавки.toLowerCase()) {
-    case 'высокое':
-      выигрыш = вращение > 50;
+  switch (betType.toLowerCase()) {
+    case 'больше':
+      win = spin > 50;
       break;
-    case 'низкое':
-      выигрыш = вращение <= 50;
+    case 'меньше':
+      win = spin <= 50;
       break;
-    case 'нечетное':
-      выигрыш = вращение % 2 === 1;
+    case 'нечет':
+      win = spin % 2 === 1;
       break;
-    case 'четное':
-      выигрыш = вращение % 2 === 0;
+    case 'чет':
+      win = spin % 2 === 0;
       break;
     default:
-      throw new Error('Недопустимый тип ставки. Используйте high, low, odd или even.');
+      throw new Error('Недопустимый тип ставки. Используйте: больше, меньше, нечет, чет.');
   }
 
-  const прибыль = выигрыш ? сумма : -сумма;
-  изменитьБаланс(userId, прибыль);
-  const баланс = получитьБаланс(userId);
+  const profit = win ? amount : -amount;
+  changeBalance(userId, profit);
+  const balance = getBalance(userId);
 
-  return `🎲 Результат ставки: ${вращение} (${типСтавки.toUpperCase()})\n` +
-    `${выигрыш ? `✅ Вы выиграли ${сумма} монет!` : `❌ Вы проиграли ${сумма} монет.`}\n` +
-    `💰 Текущий баланс: ${баланс} монет.`;
+  return `🎲 Результат ставки: ${spin} (${betType.toUpperCase()})\n` +
+    `${win ? `✅ Вы выиграли ${amount} монет!` : `❌ Вы проиграли ${amount} монет.`}\n` +
+    `💰 Новый баланс: ${balance} монет.`;
 }
 
-function автомат(userId, сумма) {
-  сумма = проверитьСтавку(userId, сумма);
-  const иконки = ['🍒', '🍋', '🔔', '⭐', '7️⃣', '🍀'];
-  const a = иконки[Math.floor(Math.random() * иконки.length)];
-  const b = иконки[Math.floor(Math.random() * иконки.length)];
-  const c = иконки[Math.floor(Math.random() * иконки.length)];
+function slots(userId, amount) {
+  amount = validateBet(userId, amount);
+  const icons = ['🍒', '🍋', '🔔', '⭐', '7️⃣', '🍀'];
+  const a = icons[Math.floor(Math.random() * icons.length)];
+  const b = icons[Math.floor(Math.random() * icons.length)];
+  const c = icons[Math.floor(Math.random() * icons.length)];
 
-  let множитель = 0;
+  let multiplier = 0;
   if (a === b && b === c) {
-    множитель = 10;
+    multiplier = 10;
   } else if (a === b || a === c || b === c) {
-    множитель = 2;
+    multiplier = 2;
   }
 
-  const прибыль = множитель > 0 ? сумма * множитель : -сумма;
-  изменитьБаланс(userId, прибыль);
+  const profit = multiplier > 0 ? amount * multiplier : -amount;
+  changeBalance(userId, profit);
 
-  const баланс = получитьБаланс(userId);
-  const текстВыигрыша = множитель > 0
-    ? `✅ ${a}${b}${c} — Вы выиграли ${сумма * множитель} монет!`
-    : `❌ ${a}${b}${c} — Вы проиграли ${сумма} монет.`;
+  const balance = getBalance(userId);
+  const winText = multiplier > 0 ? `✅ ${a}${b}${c} — Вы выиграли ${amount * multiplier} монет!` : `❌ ${a}${b}${c} — Вы проиграли ${amount} монет.`;
 
-  return `🎰 Результат игры: ${a} | ${b} | ${c}\n${текстВыигрыша}\n💰 Текущий баланс: ${баланс} монет.`;
+  return `🎰 Результат слот-машины: ${a} | ${b} | ${c}\n${winText}\n💰 Новый баланс: ${balance} монет.`;
 }
 
-function безопасноеОбеспечениеПользователя(user, chatId) {
-  return обеспечитьПользователя(user, chatId);
+function safeEnsureUser(user, chatId) {
+  return ensureUser(user, chatId);
 }
 
 module.exports = {
-  рулетка,
-  сделатьСтавку,
-  автомат,
-  безопасноеОбеспечениеПользователя,
-  проверитьСтавку
+  roulette,
+  bet,
+  slots,
+  safeEnsureUser,
+  validateBet
 };
