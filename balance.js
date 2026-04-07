@@ -2,110 +2,110 @@ const fs = require('fs');
 const path = require('path');
 const { START_BALANCE, USER_DATA_FILE } = require('./config');
 
-let state = { пользователи: {} };
+let state = { users: {} };
 
-function обеспечитьПапкуДанных() {
-  const папка = path.dirname(USER_DATA_FILE);
-  if (!fs.existsSync(папка)) fs.mkdirSync(папка, { recursive: true });
+function ensureDataFolder() {
+  const dir = path.dirname(USER_DATA_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
-function загрузитьСостояние() {
-  обеспечитьПапкуДанных();
+function loadState() {
+  ensureDataFolder();
   if (!fs.existsSync(USER_DATA_FILE)) {
-    state = { пользователи: {} };
-    сохранитьСостояние();
+    state = { users: {} };
+    saveState();
     return;
   }
   try {
     const raw = fs.readFileSync(USER_DATA_FILE, 'utf-8');
     state = JSON.parse(raw);
-    if (!state.пользователи) state.пользователи = {};
+    if (!state.users) state.users = {};
   } catch (e) {
-    console.error('Не удалось загрузить данные пользователей', e);
-    state = { пользователи: {} };
+    console.error('Failed to load user data', e);
+    state = { users: {} };
   }
 }
 
-function сохранитьСостояние() {
-  обеспечитьПапкуДанных();
+function saveState() {
+  ensureDataFolder();
   fs.writeFileSync(USER_DATA_FILE, JSON.stringify(state, null, 2), 'utf-8');
 }
 
-function получитьКлючПользователя(userId) {
+function getUserIdKey(userId) {
   return String(userId);
 }
 
-function обеспечитьПользователя(user, chatId) {
-  const id = получитьКлючПользователя(user.id);
-  if (!state.пользователи[id]) {
-    state.пользователи[id] = {
+function ensureUser(user, chatId) {
+  const id = getUserIdKey(user.id);
+  if (!state.users[id]) {
+    state.users[id] = {
       id: user.id,
       username: user.username || null,
-      имя: user.first_name || '',
-      фамилия: user.last_name || '',
-      баланс: START_BALANCE,
-      группы: [],
-      последнее_активность: Date.now()
+      first_name: user.first_name || '',
+      last_name: user.last_name || '',
+      balance: START_BALANCE,
+      groups: [],
+      last_active: Date.now()
     };
   }
-  const пользователь = state.пользователи[id];
-  пользователь.username = user.username || пользователь.username;
-  пользователь.имя = user.first_name || пользователь.имя;
-  пользователь.фамилия = user.last_name || пользователь.фамилия;
-  пользователь.последнее_активность = Date.now();
-  if (chatId && chatId !== user.id && !пользователь.группы.includes(chatId)) {
-    пользователь.группы.push(chatId);
+  const u = state.users[id];
+  u.username = user.username || u.username;
+  u.first_name = user.first_name || u.first_name;
+  u.last_name = user.last_name || u.last_name;
+  u.last_active = Date.now();
+  if (chatId && chatId !== user.id && !u.groups.includes(chatId)) {
+    u.groups.push(chatId);
   }
-  сохранитьСостояние();
-  return пользователь;
+  saveState();
+  return u;
 }
 
-function получитьБаланс(userId) {
-  const id = получитьКлючПользователя(userId);
-  if (!state.пользователи[id]) return 0;
-  return state.пользователи[id].баланс;
+function getBalance(userId) {
+  const id = getUserIdKey(userId);
+  if (!state.users[id]) return 0;
+  return state.users[id].balance;
 }
 
-function установитьБаланс(userId, сумма) {
-  const id = получитьКлючПользователя(userId);
-  if (!state.пользователи[id]) return false;
-  state.пользователи[id].баланс = Math.max(0, Math.floor(сумма));
-  сохранитьСостояние();
+function setBalance(userId, amount) {
+  const id = getUserIdKey(userId);
+  if (!state.users[id]) return false;
+  state.users[id].balance = Math.max(0, Math.floor(amount));
+  saveState();
   return true;
 }
 
-function изменитьБаланс(userId, дельта) {
-  const id = получитьКлючПользователя(userId);
-  if (!state.пользователи[id]) return null;
-  state.пользователи[id].баланс = Math.max(0, state.пользователи[id].баланс + Math.floor(дельта));
-  сохранитьСостояние();
-  return state.пользователи[id].баланс;
+function changeBalance(userId, delta) {
+  const id = getUserIdKey(userId);
+  if (!state.users[id]) return null;
+  state.users[id].balance = Math.max(0, state.users[id].balance + Math.floor(delta));
+  saveState();
+  return state.users[id].balance;
 }
 
-function перевод(fromUserId, toUserId, сумма) {
-  сумма = Math.floor(сумма);
-  if (сумма <= 0) throw new Error('Сумма должна быть положительной');
-  const from = state.пользователи[getКлючПользователя(fromUserId)];
-  const to = state.пользователи[getКлючПользователя(toUserId)];
-  if (!from || !to) throw new Error('Пользователь не найден');
-  if (from.баланс < сумма) throw new Error('Недостаточно средств');
-  from.баланс -= сумма;
-  to.баланс += сумма;
-  сохранитьСостояние();
-  return { от: from.баланс, к: to.баланс };
+function transfer(fromUserId, toUserId, amount) {
+  amount = Math.floor(amount);
+  if (amount <= 0) throw new Error('Amount must be positive');
+  const from = state.users[getUserIdKey(fromUserId)];
+  const to = state.users[getUserIdKey(toUserId)];
+  if (!from || !to) throw new Error('User not found');
+  if (from.balance < amount) throw new Error('Insufficient funds');
+  from.balance -= amount;
+  to.balance += amount;
+  saveState();
+  return { from: from.balance, to: to.balance };
 }
 
-function получитьВсехПользователей() {
-  return Object.values(state.пользователи);
+function getAllUsers() {
+  return Object.values(state.users);
 }
 
-загрузитьСостояние();
+loadState();
 
 module.exports = {
-  обеспечитьПользователя,
-  получитьБаланс,
-  установитьБаланс,
-  изменитьБаланс,
-  перевод,
-  получитьВсехПользователей
+  ensureUser,
+  getBalance,
+  setBalance,
+  changeBalance,
+  transfer,
+  getAllUsers
 };
